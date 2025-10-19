@@ -138,7 +138,94 @@ sequenceDiagram
 7. **Rollout**: Kubernetes performs rolling update of deployments
 8. **Verify**: CronJob picks up new image on next scheduled run
 
+## 🔄 Complete CI/CD Workflow
+
+### End-to-End Process Flow
+
+This diagram illustrates the complete journey from code push to production deployment:
+
+```mermaid
+graph LR
+    A[👨‍💻 Developer<br/>Push Code] -->|git push| B[📦 GitHub<br/>Repository]
+    B -->|Trigger| C[🔧 GitHub Actions<br/>CI/CD Pipeline]
+
+    C --> D[📝 Step 1:<br/>Checkout Code]
+    D --> E[🔨 Step 2:<br/>Build Docker Image]
+    E --> F[🔐 Step 3:<br/>Auth to GCP]
+    F --> G[📤 Step 4:<br/>Push to Registry]
+
+    G --> H[☁️ GCP Artifact Registry<br/>netconf-k8s-inspector:SHA]
+
+    H --> I[🚀 Step 5:<br/>Deploy to GKE]
+    I --> J[⚙️ kubectl apply<br/>manifests]
+
+    J --> K[🖥️ Router Deployment<br/>1 replica]
+    J --> L[⏰ Checker CronJob<br/>Every 5 min]
+
+    K --> M[🔌 Router Pod<br/>NETCONF Server :830]
+    L --> N[🔍 Checker Pod<br/>Compliance Validator]
+
+    N -->|NETCONF SSH| M
+    N --> O[✅ PASS/❌ FAIL<br/>Compliance Results]
+
+    style A fill:#e1f5ff
+    style B fill:#fff3cd
+    style C fill:#d4edda
+    style H fill:#cfe2ff
+    style O fill:#f8d7da
+```
+
+### Workflow Steps Explained
+
+1. **Developer Push** 👨‍💻
+   - Developer commits code changes
+   - Pushes to `main` branch via SSH
+
+2. **GitHub Actions Trigger** 🔧
+   - Workflow automatically triggered on push
+   - Reads `.github/workflows/ci-cd.yml`
+
+3. **Build Phase** 🔨
+   - Checkout code from repository
+   - Build Docker image using multi-stage Dockerfile
+   - Tag image with commit SHA for traceability
+
+4. **Authentication** 🔐
+   - Authenticate to GCP using service account
+   - Uses GitHub Secrets (GCP_SA_KEY)
+
+5. **Push to Registry** 📤
+   - Push Docker image to GCP Artifact Registry
+   - Image stored in `us-central1-docker.pkg.dev/netconf-k8s/netconf-repo`
+
+6. **Deploy to GKE** 🚀
+   - Connect to GKE cluster
+   - Apply Kubernetes manifests
+   - Update deployments and cronjobs
+
+7. **Runtime** ⚙️
+   - Router pod runs NETCONF server continuously
+   - CronJob creates checker pod every 5 minutes
+   - Checker connects, validates, and logs results
+
+---
+
 ## 🖼️ Screenshots and Evidence
+
+### GCP Artifact Registry
+
+Docker images are stored in GCP Artifact Registry with unique tags (commit SHAs) for full traceability:
+
+![Artifact Registry](../assets/screenshots/artifact-registry.png)
+
+**Key Information:**
+- **Repository**: `netconf-repo` in `us-central1`
+- **Image**: `netconf-k8s-inspector`
+- **Size**: ~7 MB (optimized multi-stage build)
+- **Tags**: Each commit SHA creates a new tagged version
+- **Latest deployments** are visible with creation timestamps
+
+---
 
 ### GKE Cluster Overview
 
