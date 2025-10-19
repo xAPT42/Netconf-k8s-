@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: netconf-checker-cronjob
+  labels:
+    app: netconf-checker
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    metadata:
+      labels:
+        app: netconf-checker
+    spec:
+      template:
+        metadata:
+          labels:
+            app: netconf-checker
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: compliance-checker
+            image: LOCATION-docker.pkg.dev/GCP_PROJECT_ID/netconf-repo/netconf-k8s-inspector:latest
+            imagePullPolicy: Always
+            command: ["/app/netconf-checker"]
+            args:
+            - "--router-address=netconf-router-service:830"
+            - "--username=netconf"
+            - "--password=netconf"
+            env:
+            - name: TZ
+              value: "UTC"
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"
