@@ -231,7 +231,6 @@ func validateCompliance(configData string) *ComplianceResult {
 }
 
 func printResults(result *ComplianceResult) {
-	totalRules := len(result.Passed) + len(result.Failed)
 	passedCount := len(result.Passed)
 	failedCount := len(result.Failed)
 
