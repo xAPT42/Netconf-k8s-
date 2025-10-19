@@ -52,7 +52,7 @@ For a deep dive into the architecture, including screenshots and detailed flow d
 
 The project is fully deployed and running on Google Kubernetes Engine:
 
-![GKE Workloads](assets/screenshots/gke-workloads.png)
+![GKE Workloads](assets/screenshots/gke-workloads-v2.png)
 
 **Production Environment:**
 - **Deployment**: netconf-router-deployment (1/1 pods running)
