@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  router:
+    image: sysrepo/sysrepo-netopeer2:latest
+    container_name: netconf-router
+    ports:
+      - "830:830"
+    networks:
+      - netconf-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "830"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  checker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: netconf-checker
+    command: ["--router-address=router:830", "--username=netconf", "--password=netconf"]
+    depends_on:
+      router:
+        condition: service_healthy
+    networks:
+      - netconf-network
+    restart: on-failure
+
+networks:
+  netconf-network:
+    driver: bridge

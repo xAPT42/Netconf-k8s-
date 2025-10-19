@@ -1,0 +1,122 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  GCP_REGION: us-central1
+  GKE_CLUSTER: netconf-cluster
+  GKE_ZONE: us-central1-a
+  ARTIFACT_REGISTRY: netconf-repo
+  IMAGE_NAME: netconf-k8s-inspector
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker to use gcloud as credential helper
+      run: |
+        gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+
+    - name: Build and push Docker image
+      env:
+        IMAGE_TAG: ${{ github.sha }}
+        FULL_IMAGE_NAME: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.IMAGE_NAME }}
+      run: |
+        docker build -t ${FULL_IMAGE_NAME}:${IMAGE_TAG} .
+        docker tag ${FULL_IMAGE_NAME}:${IMAGE_TAG} ${FULL_IMAGE_NAME}:latest
+        docker push ${FULL_IMAGE_NAME}:${IMAGE_TAG}
+        docker push ${FULL_IMAGE_NAME}:latest
+
+    - name: Upload image tag as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: image-tag
+        path: /tmp/image-tag.txt
+        retention-days: 1
+      if: always()
+      continue-on-error: true
+
+  deploy:
+    name: Deploy to GKE
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Install gke-gcloud-auth-plugin
+      run: |
+        gcloud components install gke-gcloud-auth-plugin
+
+    - name: Get GKE credentials
+      run: |
+        gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} \
+          --zone ${{ env.GKE_ZONE }} \
+          --project ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Update CronJob image tag
+      env:
+        IMAGE_TAG: ${{ github.sha }}
+        FULL_IMAGE_NAME: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY }}/${{ env.IMAGE_NAME }}
+      run: |
+        sed -i "s|LOCATION-docker.pkg.dev/GCP_PROJECT_ID/netconf-repo/netconf-k8s-inspector:latest|${FULL_IMAGE_NAME}:${IMAGE_TAG}|g" k8s/checker-cronjob.yaml
+
+    - name: Deploy to GKE
+      run: |
+        kubectl apply -f k8s/router-deployment.yaml
+        kubectl apply -f k8s/checker-cronjob.yaml
+
+    - name: Verify deployment
+      run: |
+        kubectl rollout status deployment/netconf-router-deployment --timeout=300s
+        kubectl get cronjob netconf-checker-cronjob
+        kubectl get pods -l app=netconf-router
+        kubectl get svc netconf-router-service
+
+    - name: Display deployment info
+      run: |
+        echo "=== Deployments ==="
+        kubectl get deployments
+        echo ""
+        echo "=== CronJobs ==="
+        kubectl get cronjobs
+        echo ""
+        echo "=== Services ==="
+        kubectl get services
+        echo ""
+        echo "=== Recent Pods ==="
+        kubectl get pods --sort-by=.metadata.creationTimestamp
