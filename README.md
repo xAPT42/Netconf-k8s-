@@ -48,6 +48,18 @@ graph LR
 
 For a deep dive into the architecture, including screenshots and detailed flow diagrams, see the [Architecture Documentation](docs/architecture.md).
 
+## 📸 Live Deployment
+
+The project is fully deployed and running on Google Kubernetes Engine:
+
+![GKE Workloads](assets/screenshots/gke-workloads.png)
+
+**Production Environment:**
+- **Deployment**: netconf-router-deployment (1/1 pods running)
+- **CronJob**: netconf-checker-cronjob (executing every 5 minutes)
+- **Service**: netconf-router-service (ClusterIP on port 830)
+- **Platform**: Google Kubernetes Engine (GKE) in us-central1-a
+
 ## ☁️ Google Cloud Platform (GCP) Setup
 
 To reproduce this project, you'll need to configure GCP:
