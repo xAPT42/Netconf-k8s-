@@ -1,5 +1,11 @@
+# netconf-k8s
+
 <p align="center">
-  <img src="assets/logo.png" alt="Logo du projet netconf-k8s" width="150">
+  <img src="https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white" alt="Kubernetes">
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
+  <img src="https://img.shields.io/badge/NETCONF-00ADD8?style=for-the-badge&logo=cisco&logoColor=white" alt="NETCONF">
+  <img src="https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go">
+  <img src="https://img.shields.io/badge/GCP-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white" alt="GCP">
 </p>
 
 <p align="center">
@@ -7,8 +13,6 @@
   <img src="https://goreportcard.com/badge/github.com/xAPT42/netconf-k8s" alt="Go Report Card">
   <img src="https://img.shields.io/github/license/xAPT42/netconf-k8s" alt="License: MIT">
 </p>
-
-# netconf-k8s
 
 **A cloud-native microservice for continuous network compliance checking using NETCONF and Kubernetes.**
 
