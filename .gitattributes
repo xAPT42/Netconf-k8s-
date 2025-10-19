@@ -1,0 +1,5 @@
+# Git attributes for proper language detection
+*.go linguist-language=Go
+*.yaml linguist-language=YAML
+*.yml linguist-language=YAML
+*.md linguist-documentation
